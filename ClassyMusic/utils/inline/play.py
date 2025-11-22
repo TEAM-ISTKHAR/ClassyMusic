@@ -62,10 +62,10 @@ def stream_markup_timer(_, chat_id, played, dur):
         ],
         [
             InlineKeyboardButton(
-                text="❮𝙊𝙬𝙣𝙚𝙧❯", url=f"https://t.me/I4U_CODER"
+                text="❮𝙊𝙬𝙣𝙚𝙧❯", url=f"https://t.me/Iamistkhar"
             ),
             InlineKeyboardButton(
-                text="❮𝙋𝙧𝙤𝙢𝙤❯", url=f"https://t.me/MoonMusic_Updates"
+                text="❮𝙋𝙧𝙤𝙢𝙤❯", url=f"https://t.me/JullyBots"
             ),
         ],
     ]
@@ -83,10 +83,10 @@ def stream_markup(_, chat_id):
         ],
         [
             InlineKeyboardButton(
-                text="❮𝙊𝙬𝙣𝙚𝙧❯", url=f"https://t.me/I4U_CODER"
+                text="❮𝙊𝙬𝙣𝙚𝙧❯", url=f"https://t.me/Iamistkhar"
             ),
             InlineKeyboardButton(
-                text="❮𝙋𝙧𝙤𝙢𝙤❯", url=f"https://t.me/MoonMusic_Updates"
+                text="❮𝙋𝙧𝙤𝙢𝙤❯", url=f"https://t.me/JullyBots"
             ),
         ],
     ]
@@ -162,3 +162,4 @@ def slider_markup(_, videoid, user_id, query, query_type, channel, fplay):
         ],
     ]
     return buttons
+
