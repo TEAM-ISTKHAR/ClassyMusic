@@ -19,10 +19,10 @@ MONGO_DB_URI = getenv("MONGO_DB_URI","mongodb+srv://yaemiko:yaemiko69@cluster0.o
 DURATION_LIMIT_MIN = int(getenv("DURATION_LIMIT", 200))
 
 # Chat id of a group for logging bot's activities
-LOG_GROUP_ID = int(getenv("LOG_GROUP_ID","-1002222604638"))
+LOG_GROUP_ID = int(getenv("LOG_GROUP_ID","-1002060224175"))
 
 # Get this value from @MissRose_Bot on Telegram by /id
-OWNER_ID = int(getenv("OWNER_ID","6391774843"))
+OWNER_ID = int(getenv("OWNER_ID","7980630836"))
 
 # Your heroku app name
 HEROKU_APP_NAME = getenv("HEROKU_APP_NAME","mooncodes")
@@ -39,7 +39,7 @@ API_URL = getenv("API_URL", 'https://api.thequickearn.xyz') #youtube song url
 API_KEY = getenv("API_KEY", 'NxGBNexGenBotsb1880e') # youtube song api ke  -------------------------------------------------------------
 
 GIT_TOKEN = getenv(
-    "GIT_TOKEN", "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"
+    "GIT_TOKEN", "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"
 )  # Fill this variable if your upstream repository is private
 
 SUPPORT_CHANNEL = getenv("SUPPORT_CHAT", "https://t.me/+uDj6R3XD7UplZDI9")
@@ -120,6 +120,7 @@ if SUPPORT_GROUP:
         raise SystemExit(
             "[ERROR] - Your SUPPORT_GROUP url is wrong. Please ensure that it starts with https://"
         )
+
 
 
 
