@@ -1,135 +1,97 @@
 import os
 import re
-import random
-import aiofiles
 import aiohttp
-import random
-import requests
-import os
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps, ImageDraw, ImageFont
-from unidecode import unidecode
+import aiofiles
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
 from youtubesearchpython.__future__ import VideosSearch
-from ClassyMusic import app
 from config import YOUTUBE_IMG_URL
 
-def changeImageSize(maxWidth, maxHeight, image):
-    widthRatio = maxWidth / image.size[0]
-    heightRatio = maxHeight / image.size[1]
-    newWidth = int(widthRatio * image.size[0])
-    newHeight = int(heightRatio * image.size[1])
-    newImage = image.resize((newWidth, newHeight))
-    return newImage
 
-def clear(text):
-    list = text.split(" ")
-    title = ""
-    for i in list:
-        if len(title) + len(i) < 60:
-            title += " " + i
-    return title.strip()
-
-def random_color():
-    return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+# 📁 cache folder ensure
+if not os.path.exists("cache"):
+    os.makedirs("cache")
 
 
-def predefined_color():
-    colors = [
-        (255, 0, 0),
-        (255, 255, 255),
-        (0, 0, 255),
-        (255, 255, 0),
-        (0, 255, 0),
-        (255, 105, 180),
-        (128, 0, 128)
-    ]
-    return random.choice(colors)
+def clean_title(title):
+    title = re.sub(r"\W+", " ", title)
+    return " ".join(title.split()[:5]).title()
+
 
 async def gen_thumb(videoid: str):
-    if os.path.isfile(f"cache/{videoid}.png"):
-        return f"cache/{videoid}.png"
+    file_path = f"cache/{videoid}.png"
 
-    url = f"https://www.youtube.com/watch?v={videoid}"
+    if os.path.isfile(file_path):
+        return file_path
+
     try:
+        url = f"https://www.youtube.com/watch?v={videoid}"
         results = VideosSearch(url, limit=1)
-        for result in (await results.next())["result"]:
-            try:
-                title = result["title"]
-                title = re.sub("\W+", " ", title)
-                title = title.title()
-            except:
-                title = "Unsupported Title"
-            try:
-                duration = result["duration"]
-            except:
-                duration = "Unknown Mins"
-            thumbnail = result["thumbnails"][0]["url"].split("?")[0]
-            try:
-                views = result["viewCount"]["short"]
-            except:
-                views = "Unknown Views"
-            try:
-                channel = result["channel"]["name"]
-            except:
-                channel = "Unknown Channel"
-            try:
-                upload_date = result["publishedTime"]
-            except:
-                upload_date = "Unknown Date"
+        data = (await results.next())["result"][0]
 
+        title = clean_title(data.get("title", "Unknown Title"))
+        duration = data.get("duration", "0:00")
+        channel = data.get("channel", {}).get("name", "Unknown Channel")
+        thumbnail = data["thumbnails"][0]["url"].split("?")[0]
+
+        # 📥 Download thumbnail
+        raw_path = f"cache/{videoid}_raw.png"
         async with aiohttp.ClientSession() as session:
             async with session.get(thumbnail) as resp:
                 if resp.status == 200:
-                    f = await aiofiles.open(f"cache/thumb{videoid}.png", mode="wb")
-                    await f.write(await resp.read())
-                    await f.close()
+                    async with aiofiles.open(raw_path, "wb") as f:
+                        await f.write(await resp.read())
 
-        youtube = Image.open(f"cache/thumb{videoid}.png")
-        blurred_thumbnail = youtube.filter(ImageFilter.GaussianBlur(7))
-        icon_path = "ClassyMusic/ISTKHAR/tt.png"
-        icon = Image.open(icon_path)
-        icon_size = (850, 800)
-        icon = icon.resize(icon_size)
-        thumbnail_width, thumbnail_height = blurred_thumbnail.size
-        icon_width, icon_height = icon.size
-        offset_left = 0
-        offset_right = 0
-        offset_up = 0
-        offset_down = 0
-        
-        icon_position = (
-        (thumbnail_width - icon_width) // 2 + offset_right - offset_left,
-        (thumbnail_height - icon_height) // 2 + offset_down - offset_up
-    )
-        blurred_thumbnail.paste(icon, icon_position, icon.convert('RGBA').split()[3])
-        original_thumbnail = youtube.resize((215, 170))
-        original_with_border = Image.new("RGBA", original_thumbnail.size, (0, 0, 0, 0))
-        original_with_border.paste(original_thumbnail, (0, 0), original_thumbnail.convert('RGBA').split()[3])
-        original_offset_left = 165
-        original_offset_right = 0
-        original_offset_up = 100
-        original_offset_down = 0
+        base = Image.open(raw_path).convert("RGB")
 
-        original_position = (
-        (thumbnail_width - original_with_border.width) // 2 + original_offset_right - original_offset_left, 
-        (thumbnail_height - original_with_border.height) // 2 + original_offset_down - original_offset_up
-    )
-        blurred_thumbnail.paste(original_with_border, original_position)
+        # 🔥 Background (blur)
+        bg = base.resize((1280, 720)).filter(ImageFilter.GaussianBlur(25))
+
+        # 🌑 Dark overlay
+        overlay = Image.new('RGBA', bg.size, (0, 0, 0, 120))
+        bg = Image.alpha_composite(bg.convert('RGBA'), overlay)
+
+        # 🎵 Center cover (rounded)
+        cover = base.resize((350, 350))
+        mask = Image.new("L", cover.size, 0)
+        draw_mask = ImageDraw.Draw(mask)
+        draw_mask.rounded_rectangle((0, 0, 350, 350), radius=40, fill=255)
+
+        bg.paste(cover, (120, 185), mask)
+
+        draw = ImageDraw.Draw(bg)
+
+        # 🔤 Fonts
         try:
-            font = ImageFont.truetype("ClassyMusic/ISTKHAR/f.ttf", 20)
-        except IOError:
-            font = ImageFont.load_default()
-        draw = ImageDraw.Draw(blurred_thumbnail)
-        title_words = title.split()[:6] 
-        truncated_title = ' '.join(title_words)
-        draw.text((600, 190), f"Uɴᴛᴏʟᴅ", font=font, fill=predefined_color())
-        draw.text((600, 220), f"{truncated_title}", font=font, fill=(255, 255,255))
-        draw.text((600, 260), f"{channel}", font=font, fill=(255, 255,255))
-        try:
-            os.remove(f"cache/thumb{videoid}.png")
+            title_font = ImageFont.truetype("ClassyMusic/ISTKHAR/f.ttf", 45)
+            small_font = ImageFont.truetype("ClassyMusic/ISTKHAR/f.ttf", 28)
         except:
-            pass
-        blurred_thumbnail.save(f"cache/{videoid}.png")
-        return f"cache/{videoid}.png"
+            title_font = ImageFont.load_default()
+            small_font = ImageFont.load_default()
+
+        # 📝 Text UI
+        draw.text((520, 220), title, font=title_font, fill=(255, 255, 255))
+        draw.text((520, 290), f"{channel}", font=small_font, fill=(200, 200, 200))
+        draw.text((520, 330), f"Duration: {duration}", font=small_font, fill=(180, 180, 180))
+
+        # 🎚 Progress bar
+        bar_x = 520
+        bar_y = 400
+        bar_width = 500
+
+        draw.rectangle((bar_x, bar_y, bar_x + bar_width, bar_y + 6), fill=(120, 120, 120))
+        draw.rectangle((bar_x, bar_y, bar_x + int(bar_width * 0.35), bar_y + 6), fill=(255, 255, 255))
+
+        # 🎮 Player buttons
+        draw.text((720, 450), "⏮   ⏸   ⏭", font=title_font, fill=(255, 255, 255))
+
+        # 💾 Save
+        bg.convert("RGB").save(file_path)
+
+        # 🧹 cleanup
+        os.remove(raw_path)
+
+        return file_path
+
     except Exception as e:
-        print(e)
-        return YOUTUBE_IMG_URL
+        print("Thumbnail Error:", e
